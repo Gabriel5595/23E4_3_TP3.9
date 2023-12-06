@@ -1,19 +1,50 @@
 package org.example;
 
-// Press Shift twice to open the Search Everywhere dialog and type `show whitespaces`,
-// then press Enter. You can now see whitespace characters in your code.
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 public class Main {
-    public static void main(String[] args) {
-        // Press Alt+Enter with your caret at the highlighted text to see how
-        // IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+    public static void main(String[] args) throws IOException {
+        URL urlObj = new URL("http://universities.hipolabs.com/search?country=Brazil");
+        HttpURLConnection conexao = (HttpURLConnection)urlObj.openConnection();
+        conexao.setRequestMethod("GET");
+        int responseCode = conexao.getResponseCode();
+        if (responseCode == HttpURLConnection.HTTP_OK) {
+            BufferedReader in = new BufferedReader(new InputStreamReader(conexao.getInputStream()));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
 
-        // Press Shift+F10 or click the green arrow button in the gutter to run the code.
-        for (int i = 1; i <= 5; i++) {
+            while ((inputLine = in .readLine()) != null) {
+                response.append(inputLine);
+            } in .close();
 
-            // Press Shift+F9 to start debugging your code. We have set one breakpoint
-            // for you, but you can always add more by pressing Ctrl+F8.
-            System.out.println("i = " + i);
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(response.toString());
+            List<Universidade> universidades = new ArrayList<>();
+
+            Iterator<JsonNode> iterator = jsonNode.elements();
+            while (iterator.hasNext()) {
+                JsonNode universityNode = iterator.next();
+                String name = universityNode.get("name").asText();
+                String url = universityNode.get("web_pages").get(0).asText();
+                Universidade universidade = new Universidade(name, url);
+                universidades.add(universidade);
+            }
+
+            for (Universidade universidade : universidades) {
+                System.out.println(universidade.toString());
+            }
+        } else {
+            System.out.println("GET request did not work");
         }
     }
 }
